@@ -12,7 +12,7 @@ options(stringsAsFactors = F)
 ### HERE: Specify parameters for search
 hotspot_min_length = 5 ### minimum length of a hotspot in AS
 n_hit_wonder = 1 ### number of hits two be classified as n_hit_wonder
-hotspot_min_number_of_patients = 2 ### minimum number of patients mapping peptides onto the hotspot
+hotspot_min_number_of_patients = 5 ### minimum number of patients mapping peptides onto the hotspot
 hotspot_min_number_of_as = 1 ### minimum number of aminoacids to map peptides onto the hotspot ( maximum = hotspot_min_length - 1)
 
 
@@ -24,9 +24,9 @@ dir.create(outdir)
 ### load uniprot human taxonomy
 up <- UniProt.ws(taxId=9606)
 
-
+prot <- "A4D0S4"
 ### loop over all proteins in input df
-for (protid in unique(df$Single.Proteins)){
+for (protid in c(prot)){ #unique(df$Single.Proteins)){
   print(protid)
   seq<-tryCatch({select(up, keys=c(protid), columns=c("SEQUENCE"), keytype="UNIPROTKB")$SEQUENCE}, error=function(err){seq<-"XXX"})
   df_sub<-df[which(df$Single.Proteins %in% c(protid)),][c("Sequence","Dignity","Single.Proteins","Patient..Donor")]
@@ -94,11 +94,11 @@ for (protid in unique(df$Single.Proteins)){
     ### check if at least n patients match peptides in any hotspot and at least 2 unique peptide ids for this protein
     if (any(sapply(hotspot, length)>=hotspot_min_number_of_patients)) {      #### HERE: adjust threshold for number of patients
       exclusive_switch <- TRUE
-    } else if (length(unique(df_sub$Sequence))== n_hit_wonder){     #### HERE: adjust threshold for n hit wonders
-      one_hit_switch <- TRUE
-    } 
+    }
   }
-
+  if (length(unique(df_sub$Sequence))== n_hit_wonder){     #### HERE: adjust threshold for n hit wonders
+    one_hit_switch <- TRUE
+  } 
     
   ### count benign and malignant samples
   peptide_counts<-table(df_sub$Dignity)
@@ -146,8 +146,8 @@ for (protid in unique(df$Single.Proteins)){
     write.csv(df_out, file = paste0(outdir,"/tumor_associated/",protid,"_all_peptides.csv"))
     ggsave(plot = p, filename = paste0(outdir,"/tumor_associated/",protid,"_hotspots.png"))
   } else if (one_hit_switch){
-    write.csv(df_out, file = paste0(outdir,"/one_hit/",protid,"_all_peptides.csv"))
-    ggsave(plot = p, filename = paste0(outdir,"/one_hit/",protid,"_hotspots.png"))    
+    write.csv(df_out, file = paste0(outdir,"/n_hit_wonders/",protid,"_all_peptides.csv"))
+    ggsave(plot = p, filename = paste0(outdir,"/n_hit_wonders/",protid,"_hotspots.png"))    
   } else if (benign_c==0){
     write.csv(df_out, file = paste0(outdir,"/only_malign/",protid,"_all_peptides.csv"))
     ggsave(plot = p, filename = paste0(outdir,"/only_malign/",protid,"_hotspots.png")) 
