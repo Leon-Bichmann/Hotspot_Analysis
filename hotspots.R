@@ -24,9 +24,8 @@ dir.create(outdir)
 ### load uniprot human taxonomy
 up <- UniProt.ws(taxId=9606)
 
-prot <- "A4D0S4"
 ### loop over all proteins in input df
-for (protid in c(prot)){ #unique(df$Single.Proteins)){
+for (protid in unique(df$Single.Proteins)){
   print(protid)
   seq<-tryCatch({select(up, keys=c(protid), columns=c("SEQUENCE"), keytype="UNIPROTKB")$SEQUENCE}, error=function(err){seq<-"XXX"})
   df_sub<-df[which(df$Single.Proteins %in% c(protid)),][c("Sequence","Dignity","Single.Proteins","Patient..Donor")]
