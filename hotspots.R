@@ -56,7 +56,6 @@ for (protid in unique(df$Single.Proteins)){
 
   ### test if there are malignant exclusive hotspots greater length 7
   exclusive_switch <- FALSE
-  one_hit_switch <- FALSE
   sums_malign_norm<-sums_malign/sums_malign
   sums_benign_norm<-sums_benign/sums_benign
   sums_malign_norm[which(is.na(sums_malign_norm))]<-0
@@ -95,9 +94,7 @@ for (protid in unique(df$Single.Proteins)){
       exclusive_switch <- TRUE
     }
   }
-  if (length(unique(df_sub$Sequence))== n_hit_wonder){     #### HERE: adjust threshold for n hit wonders
-    one_hit_switch <- TRUE
-  } 
+
     
   ### count benign and malignant samples
   peptide_counts<-table(df_sub$Dignity)
@@ -144,7 +141,7 @@ for (protid in unique(df$Single.Proteins)){
     write.csv(df_out_hot, file = paste0(outdir,"/tumor_associated/",protid,"_hotspot_peptides_only.csv"))
     write.csv(df_out, file = paste0(outdir,"/tumor_associated/",protid,"_all_peptides.csv"))
     ggsave(plot = p, filename = paste0(outdir,"/tumor_associated/",protid,"_hotspots.png"))
-  } else if (one_hit_switch){
+  } else if ((benign_c<=n_hit_wonder)|(malign_c<=n_hit_wonder)){
     write.csv(df_out, file = paste0(outdir,"/n_hit_wonders/",protid,"_all_peptides.csv"))
     ggsave(plot = p, filename = paste0(outdir,"/n_hit_wonders/",protid,"_hotspots.png"))    
   } else if (benign_c==0){
