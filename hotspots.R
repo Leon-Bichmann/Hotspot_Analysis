@@ -141,7 +141,7 @@ for (protid in unique(df$Single.Proteins)){
     write.csv(df_out_hot, file = paste0(outdir,"/tumor_associated/",protid,"_hotspot_peptides_only.csv"))
     write.csv(df_out, file = paste0(outdir,"/tumor_associated/",protid,"_all_peptides.csv"))
     ggsave(plot = p, filename = paste0(outdir,"/tumor_associated/",protid,"_hotspots.png"))
-  } else if ((benign_c<=n_hit_wonder)|(malign_c<=n_hit_wonder)){
+  } else if ((benign_c<=n_hit_wonder) & (malign_c<=n_hit_wonder)){
     write.csv(df_out, file = paste0(outdir,"/n_hit_wonders/",protid,"_all_peptides.csv"))
     ggsave(plot = p, filename = paste0(outdir,"/n_hit_wonders/",protid,"_hotspots.png"))    
   } else if (benign_c==0){
