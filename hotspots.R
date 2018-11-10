@@ -10,23 +10,22 @@ library(ggplot2)
 options(stringsAsFactors = F)
 
 ### HERE: Specify parameters for search
-hotspot_min_length = 5 ### minimum length of a hotspot in AS
+hotspot_min_length = 8 ### minimum length of a hotspot in AS
 n_hit_wonder = 1 ### number of hits two be classified as n_hit_wonder
-hotspot_min_number_of_patients = 4 ### minimum number of patients mapping peptides onto the hotspot
-hotspot_min_number_of_as = 1 ### minimum number of aminoacids to map peptides onto the hotspot ( maximum = hotspot_min_length - 1)
+hotspot_min_number_of_patients = 7 ### minimum number of patients mapping peptides onto the hotspot
+hotspot_min_number_of_as = 8 ### minimum number of aminoacids to map peptides onto the hotspot ( maximum = hotspot_min_length - 1)
 
 
 ### input CSV with columns "Sequence", "Dignity" and "Single.Proteins" (other columns will be ignored)
-df<-read.csv("Projects/Annika/CML_haema_classII_single_proteins_forCluster.csv")
+df<-read.csv("Projects/Annika/CML_haema_classII_single_proteins_forCluster.csv", sep=',')
 outdir <- paste0("hotspot_analysis_") #,date())
 dir.create(outdir)
 
 ### load uniprot human taxonomy
 up <- UniProt.ws(taxId=9606)
 
-
 ### loop over all proteins in input df
-for (protid in unique(c("P27824","P51159"))){#df$Protein.Group.Accessions)){
+for (protid in unique(df$Single.Proteins)[97:98]){
   print(protid)
   seq<-tryCatch({select(up, keys=c(protid), columns=c("SEQUENCE"), keytype="UNIPROTKB")$SEQUENCE}, error=function(err){seq<-"XXX"})
   df_sub<-df[which(df$Single.Proteins %in% c(protid)),][c("Sequence","Dignity","Single.Proteins","Patient..Donor")]
@@ -54,7 +53,7 @@ for (protid in unique(c("P27824","P51159"))){#df$Protein.Group.Accessions)){
       ends[row]<- (-1)
     }
   }
-
+  
   ### test if there are malignant exclusive hotspots greater length 7
   exclusive_switch <- FALSE
   sums_malign_norm<-sums_malign/sums_malign
@@ -77,29 +76,29 @@ for (protid in unique(c("P27824","P51159"))){#df$Protein.Group.Accessions)){
     print(seq_split)
     ### count number of patients with epitopes matching the hotspot
     for (seq_h in seq_split){
-        match<-str_locate_all(pattern=seq_h, seq)[[1]]
-        start<-as.numeric(match[,1]) + hotspot_min_number_of_as - 1
-        end<-as.numeric(match[,2]) - hotspot_min_number_of_as + 1
-        for (row in seq(1,length(starts))){
-          if ((starts[row] < end) & (ends[row] > start)) {
-            hotspot[[seq_h]]<-append(hotspot[[seq_h]], df_sub$Patient..Donor[row])
-            hotspot[[seq_h]]<-unique(hotspot[[seq_h]])
-            hotspot_pep[[seq_h]]<-append(hotspot_pep[[seq_h]], df_sub$Sequence[row])
-            hotspot_pep[[seq_h]]<-unique(hotspot_pep[[seq_h]])
-          }          
-        }
-    }
-    print(sapply(hotspot, length))
-    ### check if at least n patients match peptides in any hotspot and at least 2 unique peptide ids for this protein
-    if (any(sapply(hotspot, length)>=hotspot_min_number_of_patients)) {      #### HERE: adjust threshold for number of patients
-      exclusive_switch <- TRUE
-      for (n in names(which(sapply(hotspot, length)<hotspot_min_number_of_patients))){
-        hotspot_pep[[n]]<-NULL
+      match<-str_locate_all(pattern=seq_h, seq)[[1]]
+      start<-as.numeric(match[,1]) + hotspot_min_number_of_as - 1
+      end<-as.numeric(match[,2]) - hotspot_min_number_of_as + 1
+      for (row in seq(1,length(starts))){
+        if ((starts[row] < end) & (ends[row] > start)) {
+          hotspot[[seq_h]]<-append(hotspot[[seq_h]], df_sub$Patient[row])
+          hotspot[[seq_h]]<-unique(hotspot[[seq_h]])
+          hotspot_pep[[seq_h]]<-append(hotspot_pep[[seq_h]], df_sub$Sequence[row])
+          hotspot_pep[[seq_h]]<-unique(hotspot_pep[[seq_h]])
+        }          
       }
     }
+    hotspot_l<-sapply(hotspot, length)
+    print(hotspot_l)
+    ### check if at least n patients match peptides in any hotspot and at least 2 unique peptide ids for this protein
+    if (any(sapply(hotspot, length)>=hotspot_min_number_of_patients)) {      #### HERE: adjust threshold for number of patients
+      hotspot <- hotspot[as.integer(which(hotspot_l>=hotspot_min_number_of_patients))]
+      hotspot_pep <- hotspot_pep[as.integer(which(hotspot_l>=hotspot_min_number_of_patients))]
+      exclusive_switch <- TRUE
+    }
   }
-
-    
+  
+  
   ### count benign and malignant samples
   peptide_counts<-table(df_sub$Dignity)
   if ("malignant" %in% names(peptide_counts)){
@@ -117,32 +116,26 @@ for (protid in unique(c("P27824","P51159"))){#df$Protein.Group.Accessions)){
     benign_count<-1
     benign_c<-benign_count-1
   }
-
+  
   ### summarize sequence coverage counts, normalize over counts and multiply benign by -1 to visualize horizontal mirror depiction
-  sm<-cbind(as.data.frame(sums_malign/malign_count),rep(paste0("CML npep=",malign_c),str_length(seq)),seq(1,str_length(seq)))
-  sb<-cbind(as.data.frame(sums_benign*(-1)/benign_count),rep(paste0("Hematological\nbenign npep=",benign_c),str_length(seq)),seq(1,str_length(seq)))
+  sm<-cbind(as.data.frame(sums_malign/malign_count),rep(paste0("malignant n=",malign_c),str_length(seq)),seq(1,str_length(seq)))
+  sb<-cbind(as.data.frame(sums_benign*(-1)/benign_count),rep(paste0("benign n=",benign_c),str_length(seq)),seq(1,str_length(seq)))
   colnames(sm)<-c("Count",protid,"Sequence")
   colnames(sb)<-c("Count",protid,"Sequence")
   sums<-rbind(sm,sb)
   sums[[2]]<-factor(sums[[2]], levels = rev(levels(factor(sums[[2]]))))
-  sums$Count <- sums$Count * 100
-  sums$protid<-factor(sums$protid, levels = rev(levels(sums$protid)))
   
   ### plot
   p<-ggplot(sums, aes_string(x="Sequence", y="Count", fill=protid)) + 
     geom_bar(stat="identity", position="identity", width = 1) +
     geom_hline(yintercept = 0) +
-    theme_classic() +
-    scale_fill_manual(values=c("#F94040","#0000C0"), labels=c(paste0("CML npep=",malign_c),paste0("Hematological\nbenign npep=",benign_c))) +
-    guides(fill=guide_legend(title="")) +
-    labs(x = 'Sequenz position', y = 'AA frequency per cohort [%]') +
-    scale_x_continuous(expand = c(0,0))
+    theme_classic()
   
   ### output start and end mapping per peptide
   dir.create(paste0(outdir,"/only_benign"))
   dir.create(paste0(outdir,"/only_malign"))
   dir.create(paste0(outdir,"/tumor_associated"))
-  dir.create(paste0(outdir,"/others"))
+  dir.create(paste0(outdir,"/all"))
   dir.create(paste0(outdir,"/n_hit_wonders"))
   df_out<-cbind(df_sub,starts,ends)
   df_out_hot<-df_out[which(df_out$Sequence %in% unlist(hotspot_pep)),]
@@ -161,8 +154,7 @@ for (protid in unique(c("P27824","P51159"))){#df$Protein.Group.Accessions)){
     write.csv(df_out, file = paste0(outdir,"/only_benign/",protid,"_all_peptides.csv"))
     ggsave(plot = p, filename = paste0(outdir,"/only_benign/",protid,"_hotspots.png")) 
   } else {
-    write.csv(df_out, file = paste0(outdir,"/others/",protid,"_peptides.csv") )
-    ggsave(plot = p, filename = paste0(outdir,"/others/",protid,"_hotspots.png"))
+    write.csv(df_out, file = paste0(outdir,"/all/",protid,"_peptides.csv") )
+    ggsave(plot = p, filename = paste0(outdir,"/all/",protid,"_hotspots.png"))
   }
 }
-
