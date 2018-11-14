@@ -17,18 +17,18 @@ hotspot_min_number_of_as = 8 ### minimum number of aminoacids to map peptides on
 
 
 ### input CSV with columns "Sequence", "Dignity" and "Single.Proteins" (other columns will be ignored)
-df<-read.csv("Projects/Annika/CML_haema_classII_single_proteins_forCluster.csv", sep=',')
-outdir <- paste0("hotspot_analysis_") #,date())
+df<-read.csv("C:/Users/ane/Desktop/hotspot/PROTEIN_DATABASE_AML_DIS+VAL_BENING_HAEMA+AUTOPSIE_CLASSII_WITH_DUPLICATES_FOR_HOTSPOT_Part1+2_woVal.csv", sep=';')
+outdir <- paste0("hotspot_analysis_wo_One_Hit_Wonder_8_1_10_8") #,date())
 dir.create(outdir)
 
 ### load uniprot human taxonomy
 up <- UniProt.ws(taxId=9606)
 
 ### loop over all proteins in input df
-for (protid in unique(df$Single.Proteins)[97:98]){
+for (protid in unique(df$Single.Proteins)){
   print(protid)
   seq<-tryCatch({select(up, keys=c(protid), columns=c("SEQUENCE"), keytype="UNIPROTKB")$SEQUENCE}, error=function(err){seq<-"XXX"})
-  df_sub<-df[which(df$Single.Proteins %in% c(protid)),][c("Sequence","Dignity","Single.Proteins","Patient..Donor")]
+  df_sub<-df[which(df$Single.Proteins %in% c(protid)),][c("Sequence","Dignity","Single.Proteins","Patient")]
   ### retrieve sequence of proteinid and match peptide sequence start and end point
   starts<-rep(NA,length(df_sub[,1]))
   ends<-rep(NA,length(df_sub[,1]))
