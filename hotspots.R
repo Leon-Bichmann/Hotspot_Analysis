@@ -135,16 +135,23 @@ for (protid in unique(df$Single.Proteins)){
   dir.create(paste0(outdir,"/only_benign"))
   dir.create(paste0(outdir,"/only_malign"))
   dir.create(paste0(outdir,"/tumor_associated"))
+  dir.create(paste0(outdir,"/tumor_associated/Peptidetargets/"))
   dir.create(paste0(outdir,"/all"))
   dir.create(paste0(outdir,"/n_hit_wonders"))
   df_out<-cbind(df_sub,starts,ends)
   df_out_hot<-df_out[which(df_out$Sequence %in% unlist(hotspot_pep)),]
   if (exclusive_switch){
-    capture.output(print(hotspot_pep), file = paste0(outdir,"/tumor_associated/",protid,"_hotspots_matches.csv"))
-    write.csv(sums, file = paste0(outdir,"/tumor_associated/",protid,"_coverage.csv"))
-    write.csv(df_out_hot, file = paste0(outdir,"/tumor_associated/",protid,"_hotspot_peptides_only.csv"))
-    write.csv(df_out, file = paste0(outdir,"/tumor_associated/",protid,"_all_peptides.csv"))
-    ggsave(plot = p, filename = paste0(outdir,"/tumor_associated/",protid,"_hotspots.png"))
+    if (length(unique(df_out_hot$Sequence))==1 ){
+      capture.output(print(hotspot_pep), file = paste0(outdir,"/tumor_associated/Peptidetargets/",protid,"_hotspots_matches.csv"))
+      write.csv(df_out_hot, file = paste0(outdir,"/tumor_associated/Peptidetargets/",protid,"_hotspot_peptides_only.csv"))
+      write.csv(df_out, file = paste0(outdir,"/tumor_associated/Peptidetargets/",protid,"_all_peptides.csv"))
+      ggsave(plot = p, filename = paste0(outdir,"/tumor_associated/Peptidetargets/",protid,"_hotspots.png"))
+    } else {
+      capture.output(print(hotspot_pep), file = paste0(outdir,"/tumor_associated/",protid,"_hotspots_matches.csv"))
+      write.csv(df_out_hot, file = paste0(outdir,"/tumor_associated/",protid,"_hotspot_peptides_only.csv"))
+      write.csv(df_out, file = paste0(outdir,"/tumor_associated/",protid,"_all_peptides.csv"))
+      ggsave(plot = p, filename = paste0(outdir,"/tumor_associated/",protid,"_hotspots.png"))
+    }
   } else if ((benign_c<=n_hit_wonder) & (malign_c<=n_hit_wonder)){
     write.csv(sums, file = paste0(outdir,"/n_hit_wonders/",protid,"_coverage.csv"))
     write.csv(df_out, file = paste0(outdir,"/n_hit_wonders/",protid,"_all_peptides.csv"))
